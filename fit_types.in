@@ -1,0 +1,95 @@
+
+use std::fmt;
+
+// FIT epoch starts 1989-12-31T00:00:00, 631065600 second after unix timestamp
+pub static FIT_EPOCH: i64 = 631065600i64;
+
+#[derive(Debug, Clone)]
+pub enum FitType {
+    Enum(u8),
+    Sint8(i8),
+    Uint8(u8),
+    Sint16(i16),
+    Uint16(u16),
+    Sint32(i32),
+    Uint32(u32),
+    String(String),
+    Float32(f32),
+    Float64(f64),
+    Uint8z(u8),
+    Uint16z(u16),
+    Uint32z(u32),
+    Bytes(Vec<u8>),
+    Sint64(i64),
+    Uint64(u64),
+    Uint64z(u64),
+}
+
+impl FitType {
+    pub fn is_invalid(&self) -> bool {
+        /* See Table 4-6 in D00001275 Flexible & Interoperable Data Transfer (FIT) Protocol Rev 2.3.pdf */
+        match *self {
+            FitType::Enum(ref v) => *v == u8::max_value(),
+            FitType::Sint8(ref v) => *v == i8::max_value(),
+            FitType::Uint8(ref v) => *v == u8::max_value(),
+            FitType::Sint16(ref v) => *v == i16::max_value(),
+            FitType::Uint16(ref v) => *v == u16::max_value(),
+            FitType::Sint32(ref v) => *v == i32::max_value(),
+            FitType::Uint32(ref v) => *v == u32::max_value(),
+            FitType::String(_) => false,
+            FitType::Float32(ref v) => v.is_nan(),
+            FitType::Float64(ref v) => v.is_nan(),
+            FitType::Uint8z(ref v) => *v == 0u8,
+            FitType::Uint16z(ref v) => *v == 0u16,
+            FitType::Uint32z(ref v) => *v == 0u32,
+            FitType::Bytes(_) => false,
+            FitType::Sint64(ref v) => *v == i64::max_value(),
+            FitType::Uint64(ref v) => *v == u64::max_value(),
+            FitType::Uint64z(ref v) => *v == 0u64,
+        }
+    }
+}
+
+impl fmt::Display for FitType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if self.is_invalid() {
+            return write!(f, "Invalid Value")
+        }
+        match *self {
+            FitType::Enum(ref v) => write!(f, "{}", v),
+            FitType::Sint8(ref v) => write!(f, "{}", v),
+            FitType::Uint8(ref v) => write!(f, "{}", v),
+            FitType::Sint16(ref v) => write!(f, "{}", v),
+            FitType::Uint16(ref v) => write!(f, "{}", v),
+            FitType::Sint32(ref v) => write!(f, "{}", v),
+            FitType::Uint32(ref v) => write!(f, "{}", v),
+            FitType::String(ref v) => write!(f, "{}", v),
+            FitType::Float32(ref v) => write!(f, "{}", v),
+            FitType::Float64(ref v) => write!(f, "{}", v),
+            FitType::Uint8z(ref v) => write!(f, "{}", v),
+            FitType::Uint16z(ref v) => write!(f, "{}", v),
+            FitType::Uint32z(ref v) => write!(f, "{}", v),
+            FitType::Bytes(ref v) => {
+                for b in v { write!(f, "{:02}", b)?; }
+                Ok(())
+            },
+            FitType::Sint64(ref v) => write!(f, "{}", v),
+            FitType::Uint64(ref v) => write!(f, "{}", v),
+            FitType::Uint64z(ref v) => write!(f, "{}", v),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct FitValue {
+    pub index: u8,
+    pub value: FitType,
+}
+
+pub trait IntoField<T> where Self: Sized {
+    fn into_field(value: T) -> Option<Self>;
+}
+
+pub trait Message {
+    fn id(&self) -> u16;
+}
